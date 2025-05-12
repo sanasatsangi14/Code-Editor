@@ -8,8 +8,11 @@ const ACTIONS = require('./src/Actions');
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.use(express.static('build'));
-app.use((req, res, next) => {
+app.use(express.static(path.join(__dirname, 'build')));
+/*app.use((req, res, next) => {
+    res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});*/
+app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
