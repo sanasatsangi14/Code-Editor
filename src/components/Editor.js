@@ -9,8 +9,9 @@ import ACTIONS from '../Actions';
 
 const Editor = ({ socketRef, roomId, onCodeChange }) => {
     const editorRef = useRef(null);
+
     useEffect(() => {
-        async function init() {
+        const init = async () => {
             editorRef.current = Codemirror.fromTextArea(
                 document.getElementById('realtimeEditor'),
                 {
@@ -27,29 +28,40 @@ const Editor = ({ socketRef, roomId, onCodeChange }) => {
                 const code = instance.getValue();
                 onCodeChange(code);
                 if (origin !== 'setValue') {
-                    socketRef.current.emit(ACTIONS.CODE_CHANGE, {
+                    socketRef.current?.emit(ACTIONS.CODE_CHANGE, {
                         roomId,
                         code,
                     });
                 }
             });
-        }
+        };
+
         init();
-    }, []);
+    }, [onCodeChange, roomId, socketRef]);
 
     useEffect(() => {
-        if (socketRef.current) {
-            socketRef.current.on(ACTIONS.CODE_CHANGE, ({ code }) => {
-                if (code !== null) {
-                    editorRef.current.setValue(code);
-                }
-            });
-        }
+        if (!socketRef.current) return;
+
+        const codeChangeHandler = ({ code }) => {
+            if (code !== null && editorRef.current) {
+                editorRef.current.setValue(code);
+            }
+        };
+
+        socketRef.current.on(ACTIONS.CODE_CHANGE, codeChangeHandler);
 
         return () => {
-            socketRef.current.off(ACTIONS.CODE_CHANGE);
+            socketRef.current.off(ACTIONS.CODE_CHANGE, codeChangeHandler);
         };
-    }, [socketRef.current]);
+    }, [socketRef]);
+
+    // Optional cleanup if you're handling disconnect logic here
+    useEffect(() => {
+        const socket = socketRef.current;
+        return () => {
+            socket?.disconnect();
+        };
+    }, [socketRef]);
 
     return <textarea id="realtimeEditor"></textarea>;
 };
